@@ -73,7 +73,11 @@ unsigned int hash(char *str, int max)
  */
 HashTable *create_hash_table(int capacity)
 {
-  HashTable *ht;
+  HashTable *ht = malloc(sizeof(HashTable));
+  //construct da struct! sotrage initialized to 0/NULL
+  ht->capacity=capacity; // the input var
+  ht->storage=calloc(capacity,sizeof(LinkedPair *)); //capacity is the number of blocks and the
+  //LinkedPairs are the key values which each block needs to fit
 
   return ht;
 }
@@ -89,7 +93,22 @@ HashTable *create_hash_table(int capacity)
  */
 void hash_table_insert(HashTable *ht, char *key, char *value)
 {
-
+  int hashed_index = hash(key,ht->capacity);
+  if(ht->storage[hashed_index] !=NULL){
+    LinkedPair *current_index = ht->storage[hashed_index];
+    while(current_index != NULL){
+      if(current_index->key == key){
+        current_index->value = value;
+      }else if(current_index->next == NULL){
+        current_index->next = create_pair(key,value);
+      }else{
+        // if the struct is empty
+        current_index = current_index->next;
+      }
+    }
+  }else{
+    ht->storage[hashed_index] = create_pair(key,value);
+  }
 }
 
 /*
@@ -102,8 +121,28 @@ void hash_table_insert(HashTable *ht, char *key, char *value)
  */
 void hash_table_remove(HashTable *ht, char *key)
 {
-
-}
+  // need to keep track of previous and current indices for removal
+  int hash_key = hash(key,ht->capacity);
+  if(ht->storage[hash_key] != NULL){
+    LinkedPair *curri = ht->storage[hash_key];
+    LinkedPair *prev = NULL;
+    while(curri !=NULL){
+      // if the keys match
+      if(strcmp(curri->key, key) == 0){
+        if(prev == NULL){
+          ht->storage[hash_key]=curri->next;
+        } else{
+          prev->next=curri->next;
+        }
+        destroy_pair(curri);
+        free(ht->storage[hash_key]);
+      } else {
+      prev = curri;
+      curri = curri->next;
+    }
+   }
+  }
+ }
 
 /*
   Fill this in.
@@ -115,6 +154,17 @@ void hash_table_remove(HashTable *ht, char *key)
  */
 char *hash_table_retrieve(HashTable *ht, char *key)
 {
+  int hash_key = hash(key, ht->capacity);
+  if(ht->storage[hash_key]!=NULL){
+    LinkedPair *curr = ht->storage[hash_key];
+    while(curr != NULL){
+      if(strcmp(curr->key, key) == 0){
+        return curr->value;
+      } else{
+        curr = curr->next;
+      }
+    }
+  }
   return NULL;
 }
 
@@ -125,7 +175,17 @@ char *hash_table_retrieve(HashTable *ht, char *key)
  */
 void destroy_hash_table(HashTable *ht)
 {
-
+  for(int i = 0; i<ht->capacity; i++){
+    if(ht->storage[i] !=NULL){
+      LinkedPair *next_one = ht->storage[i]->next;
+      while(next_one!= NULL){
+        free(ht->storage[i]);
+        ht->storage[i] = next_one;
+      }
+    }
+  }
+  free(ht->storage);
+  free(ht);
 }
 
 /*
@@ -138,9 +198,19 @@ void destroy_hash_table(HashTable *ht)
  */
 HashTable *hash_table_resize(HashTable *ht)
 {
-  HashTable *new_ht;
-
-  return new_ht;
+  //make a new table to resize using linked list chaining twice the capacity
+  HashTable *ht2 = create_hash_table(ht->capacity*2);
+  for(int i=0; i<ht->capacity; i++){
+    LinkedPair *curr = ht->storage[i];
+    if(curr != NULL){
+      //insert the values into the new table:
+      hash_table_insert(ht2, curr->key, curr->value);
+      curr = curr->next;
+    }
+  }
+  //delete the old table
+  destroy_hash_table(ht);
+  return ht2;
 }
 
 
