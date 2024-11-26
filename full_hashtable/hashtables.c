@@ -73,7 +73,10 @@ unsigned int hash(char *str, int max)
  */
 HashTable *create_hash_table(int capacity)
 {
-  HashTable *ht;
+  HashTable *ht = malloc(sizeof(HashTable));
+  ht->capacity = capacity;
+  printf("Value of capacity: %d\n", capacity);
+  ht->storage = (LinkedPair**) calloc(capacity, sizeof(LinkedPair*));
 
   return ht;
 }
@@ -89,7 +92,26 @@ HashTable *create_hash_table(int capacity)
  */
 void hash_table_insert(HashTable *ht, char *key, char *value)
 {
-
+  int arrayIndex = hash(key, ht->capacity);
+  LinkedPair *pair = ht->storage[arrayIndex];
+  if (!pair) {
+    LinkedPair *newpair = create_pair(key, value);
+    ht->storage[arrayIndex] = newpair;
+  } else {
+    while (pair) {
+      if (!strcmp(pair->key, key)) {
+        free(pair->value);
+        pair->value = strdup(value);
+        return;
+      }
+      if (!pair->next) {
+        break;
+      }
+      pair = pair->next;
+    }
+    LinkedPair *newpair = create_pair(key, value);
+    pair->next = newpair;
+  }
 }
 
 /*
@@ -102,7 +124,9 @@ void hash_table_insert(HashTable *ht, char *key, char *value)
  */
 void hash_table_remove(HashTable *ht, char *key)
 {
-
+  // int arrayIndex = hash(key, ht->capacity);
+  // destroy_pair(ht->storage[arrayIndex]);
+  // ht->storage[arrayIndex] = NULL;
 }
 
 /*
@@ -115,7 +139,11 @@ void hash_table_remove(HashTable *ht, char *key)
  */
 char *hash_table_retrieve(HashTable *ht, char *key)
 {
-  return NULL;
+  // int arrayIndex = hash(key, ht->capacity);
+  // if (ht->storage[arrayIndex]){
+  //   return ht->storage[arrayIndex]->value;
+  // }
+  // return NULL;
 }
 
 /*
@@ -125,7 +153,11 @@ char *hash_table_retrieve(HashTable *ht, char *key)
  */
 void destroy_hash_table(HashTable *ht)
 {
-
+  for (int i = 0; i < ht->capacity; i++) {
+    destroy_pair(ht->storage[i]);
+  }
+  free(ht->storage);
+  free(ht);
 }
 
 /*
@@ -138,8 +170,11 @@ void destroy_hash_table(HashTable *ht)
  */
 HashTable *hash_table_resize(HashTable *ht)
 {
-  HashTable *new_ht;
-
+  HashTable *new_ht = create_hash_table(ht->capacity * 2);
+  for (int i = 0; i < ht->capacity; i++) {
+    new_ht->storage[i] = ht->storage[i];
+  }
+  destroy_hash_table(ht);
   return new_ht;
 }
 
